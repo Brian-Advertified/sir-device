@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sir Device devices, plans and internet marketplace">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{{ title }} | {{ app_name }}</title>
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+  <script defer src="/static/js/app.js"></script>
+  <script defer src="/static/js/commerce.js"></script>
+</head>
+<body>
+  {% import "partials/icons.html" as icons %}
+  <div class="topbar">
+    <span>Free delivery on orders over R1,000</span>
+    <span>Help &amp; Support {% if support_phone %}&nbsp;·&nbsp; {{ support_phone }}{% endif %}</span>
+    {% if whatsapp_number %}<a href="https://wa.me/{{ whatsapp_number }}">WhatsApp Us</a>{% else %}<a href="/support">Contact Sir Device</a>{% endif %}
+  </div>
+  {% block header %}
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Sir Device home">
+      <img src="/static/img/sir_device_logo.png" alt="Sir Device" class="brand-logo" height="40">
+    </a>
+    <button class="nav-toggle" data-nav-toggle aria-label="Open menu">Menu</button>
+    <nav class="primary-nav" data-primary-nav>
+      {% for item in navigation %}<a href="{{ item.href }}" class="{{ 'has-caret' if loop.index in (1,2,3,5) else '' }}">{{ item.label }}</a>{% endfor %}
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" aria-label="Search" data-search-toggle>{{ icons.search() }}</button>
+      {% if principal %}<a class="icon-btn" href="/account" aria-label="Account">{{ icons.user() }}</a>{% else %}<a class="icon-btn" href="/login" aria-label="Sign in">{{ icons.user() }}</a>{% endif %}
+      <a class="icon-btn cart-link" href="/cart" aria-label="Cart">{{ icons.cart() }}<span data-cart-count>0</span></a>
+    </div>
+  </header>
+  {% endblock %}
+
+  {% block content %}{% endblock %}
+
+  <section class="legal-strip">
+    <div class="container"><strong>Important:</strong> {{ network_notice }}</div>
+  </section>
+  <footer class="site-footer">
+    <div class="footer-grid container">
+      <div>
+        <a class="brand brand-light" href="/"><img src="/static/img/sir_device_logo.png" alt="Sir Device" class="brand-logo" height="40"></a>
+        <p>Devices, plans and internet for people building what comes next.</p>
+        <p class="division">A division of</p>
+        <img src="/static/img/bsg_logo.png" alt="Blackspace Group" class="bsg-logo" height="32">
+      </div>
+      <div><h3>Shop</h3><a href="/devices">Devices</a><a href="/mobile-plans">Plans</a><a href="/internet">Internet</a><a href="/promotions">Promotions</a></div>
+      <div><h3>Customer care</h3><a href="mailto:{{ support_email }}">{{ support_email }}</a><a href="/support">Contact support</a><a href="/application-status">Track a request</a><a href="/account">Customer account</a></div>
+      <div><h3>Legal</h3><a href="#">Privacy policy</a><a href="#">Website terms</a><a href="#">Returns and refunds</a><a href="#">Delivery policy</a></div>
+    </div>
+    <div class="footer-bottom container"><span>© {{ app_name }}</span><span>{{ demo_notice }}</span></div>
+  </footer>
+</body>
+</html>

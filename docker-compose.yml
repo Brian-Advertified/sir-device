@@ -1,0 +1,51 @@
+services:
+  web:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/var/uploads
+
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sir_device}
+      POSTGRES_USER: ${POSTGRES_USER:-sir_device}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sir_device_change_me}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - database:/var/lib/postgresql/data
+
+  backup:
+    image: postgres:17-alpine
+    environment:
+      PGHOST: database
+      PGDATABASE: ${POSTGRES_DB:-sir_device}
+      PGUSER: ${POSTGRES_USER:-sir_device}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-sir_device_change_me}
+      BACKUP_DIRECTORY: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    depends_on:
+      database:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - while true; do /usr/local/bin/backup_postgres.sh; sleep "$${BACKUP_INTERVAL_SECONDS}"; done
+    volumes:
+      - ./scripts/backup_postgres.sh:/usr/local/bin/backup_postgres.sh:ro
+      - backups:/backups
+
+volumes:
+  uploads:
+  database:
+  backups:

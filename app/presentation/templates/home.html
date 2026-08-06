@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import deal_card with context %}
+{% import "partials/icons.html" as icons %}
+{% block content %}
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <span class="hero-pill"><span class="hero-pill-dot"></span> Mobile Deals, One Place.</span>
+        <h1>Your next device, plan or connection <em>starts here.</em></h1>
+        <p>Browse and compare selected Vodacom and MTN devices, mobile plans and internet deals for you or your business.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="/devices">Shop Devices</a>
+          <a class="button button-outline-light" href="/mobile-plans">Compare Plans</a>
+          <a class="button button-outline-light" href="/internet">Find Internet</a>
+          <a class="button button-outline-light" href="/business-quote">Get a Business Quote</a>
+        </div>
+      </div>
+      <div class="device-stage" aria-hidden="true">
+        <img src="/static/img/hero.png" alt="" class="hero-image">
+      </div>
+    </div>
+  </section>
+
+  <section class="trust-bar container">
+    <div><span class="trust-icon">{{ icons.truck() }}</span><strong>Free delivery</strong><small>On orders over R1,000.</small></div>
+    <div><span class="trust-icon">{{ icons.returns() }}</span><strong>14 day returns</strong><small>Hassle free</small></div>
+    <div><span class="trust-icon">{{ icons.shield() }}</span><strong>Authorised reseller</strong><small>Vodacom &amp; MTN</small></div>
+    <div><span class="trust-icon">{{ icons.lock() }}</span><strong>Safe &amp; secure</strong><small>Your data is protected</small></div>
+  </section>
+
+  {% if banners %}
+  <section class="container banner-stack">
+    {% for banner in banners %}<a class="promo-banner" href="{{ banner.link_url or '#' }}"><div><span>Promotion</span><h2>{{ banner.title }}</h2><p>{{ banner.body or '' }}</p></div>{% if banner.image_url %}<img src="{{ banner.image_url }}" alt="">{% endif %}</a>{% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="section container">
+    <div class="section-heading"><h2 class="fire-heading"><span class="fire-emoji">🔥</span> Featured Live Deals</h2>
+      <div class="section-heading-right"><a class="view-all-link" href="/promotions">View all deals</a><div class="carousel-nav"><button type="button" aria-label="Previous">{{ icons.arrow('left') }}</button><button type="button" aria-label="Next">{{ icons.arrow('right') }}</button></div></div>
+    </div>
+    {% if featured_deals %}<div class="deal-grid">{% for deal in featured_deals %}{{ deal_card(deal) }}{% endfor %}</div>{% else %}<div class="empty-state"><img src="/static/img/device-placeholder.svg" alt=""><h3>No verified live deals published yet</h3><p>An authorised Sir Device product manager can import or publish deals from the administration dashboard.</p><a class="button button-primary" href="/admin/catalog">Open catalogue administration</a></div>{% endif %}
+  </section>
+
+  <section class="section muted-section">
+    <div class="container"><div class="section-heading"><div><h2>Shop by need</h2><p class="section-sub">Explore categories that fit your lifestyle or business.</p></div></div>
+      <div class="need-grid">{% for label, href, icon in shop_by_need %}<a href="{{ href }}"><span class="need-icon">{{ icons.need_icon(icon) }}</span><strong>{{ label }}</strong></a>{% endfor %}</div>
+    </div>
+  </section>
+
+  <section class="business-band">
+    <div class="container business-grid"><div class="business-copy"><span class="section-kicker lime">Solutions for</span><h2>your <em>business.</em></h2><ul><li>Business mobile contracts</li><li>Staff device packages</li><li>Internet for offices</li><li>LTE &amp; 5G backup connectivity</li><li>Bulk device orders</li><li>Business quotations</li></ul><a class="button button-primary" href="/business-quote">Get a Business Quote</a></div><div class="business-art"><img src="/static/img/business-section.png" alt="Business professional using a mobile device" class="business-image"></div></div>
+  </section>
+
+  <section class="section container why-shop">
+    <h2 class="why-heading">Why shop with Sir Device?</h2>
+    <div class="need-grid four">
+      <div><span class="need-icon flat">{{ icons.shield() }}</span><strong>Trusted Reseller</strong><small>Authorised Vodacom &amp; MTN</small></div>
+      <div><span class="need-icon flat">{{ icons.star() }}</span><strong>Best Deals</strong><small>We mirror the best offers</small></div>
+      <div><span class="need-icon flat">{{ icons.user() }}</span><strong>Expert Support</strong><small>Real people. Real help.</small></div>
+      <div><span class="need-icon flat">{{ icons.compare_icon() }}</span><strong>Business Focused</strong><small>Built for teams and pros</small></div>
+    </div>
+  </section>
+</main>
+{% endblock %}

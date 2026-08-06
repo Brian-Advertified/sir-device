@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="admin-shell">
+  <aside class="admin-sidebar">
+    <div><span class="admin-label">Administration</span><strong>{{ admin_user.full_name }}</strong><small>{{ role_labels[admin_user.role] }}</small></div>
+    <nav><a href="/admin">Dashboard</a><a href="/admin/catalog">Products &amp; deals</a><a href="/admin/applications">Applications</a><a href="/admin/quotes">Business quotes</a><a href="/admin/orders">Orders &amp; payments</a><a href="/admin/support">Support enquiries</a>{% if admin_user.role == UserRole.ADMINISTRATOR %}<a href="/admin/users">Users &amp; permissions</a>{% endif %}</nav>
+    <a href="/" class="admin-back">View storefront</a>
+  </aside>
+  <section class="admin-main">{% block admin_content %}{% endblock %}</section>
+</main>
+{% endblock %}

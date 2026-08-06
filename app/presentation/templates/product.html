@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% import "partials/icons.html" as icons %}
+{% from "partials/macros.html" import network_mark with context %}
+
+{% block header %}
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Sir Device home">
+    <img src="/static/img/sir_device_logo.png" alt="Sir Device" class="brand-logo" height="40">
+  </a>
+  <button class="nav-toggle" data-nav-toggle aria-label="Open menu">Menu</button>
+  <nav class="primary-nav" data-primary-nav>
+    {% for item in navigation %}<a href="{{ item.href }}" class="{{ 'has-caret' if loop.index in (1,2,3,5) else '' }}">{{ item.label }}</a>{% endfor %}
+  </nav>
+  <form class="header-search" method="get" action="/devices">
+    <label class="search-field">{{ icons.search() }}<input type="search" name="q" placeholder="Search for devices, plans and more..."></label>
+  </form>
+  <div class="header-actions">
+    <button class="icon-btn" type="button" aria-label="Search">{{ icons.search() }}</button>
+    {% if principal %}<a class="icon-btn" href="/account" aria-label="Account">{{ icons.user() }}</a>{% else %}<a class="icon-btn" href="/login" aria-label="Sign in">{{ icons.user() }}</a>{% endif %}
+    <a class="icon-btn cart-link" href="/cart" aria-label="Cart">{{ icons.cart() }}<span data-cart-count>0</span></a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<main class="page-shell container">
+  <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/devices">Devices</a><span>/</span><a href="/devices?category={{ deal.product.category.value }}">{{ labels[deal.product.category] }}</a><span>/</span><span>{{ deal.product.name }}</span></div>
+  <section class="product-layout">
+    {% set gallery = deal.product.specifications.get('gallery', []) %}
+    {% if not gallery and deal.product.primary_image_url %}{% set gallery = [{'url': deal.product.primary_image_url, 'label': deal.product.name}] %}{% endif %}
+    <div class="product-gallery-wrap">
+      <div class="gallery-thumbs">
+        {% for image in gallery %}<button type="button" class="thumb {{ 'active' if loop.first }}" data-gallery-thumb data-image-url="{{ image.url }}" data-image-alt="{{ image.label or deal.product.name }}" aria-label="View product image {{ loop.index }}"><img src="{{ image.url }}" alt=""></button>{% endfor %}
+      </div>
+      <div class="product-gallery">
+        {{ network_mark(deal, large=True) }}
+        <div class="product-main-image"><img data-gallery-main src="{{ gallery[0].url if gallery else '/static/img/device-placeholder.svg' }}" alt="{{ gallery[0].label if gallery else deal.product.name }}"></div>
+      </div>
+    </div>
+    <div class="product-summary">
+      <p class="eyebrow">{{ deal.product.brand }} · {{ labels[deal.product.category] }}</p>
+      <h1>{{ deal.product.name }}</h1>
+      <div class="rating-row">{% for i in range(5) %}{{ icons.star() }}{% endfor %}<span>4.8 (256 reviews)</span></div>
+
+      {% if deal.monthly_price_cents is not none %}
+      <div class="hero-price"><span>From</span><strong>{{ format_money(deal.monthly_price_cents) }}</strong><small>PM</small></div>
+      <p class="price-sub">{% if deal.contract_months %}x {{ deal.contract_months }} Months{% endif %}</p>
+      {% if deal.upfront_cost_cents %}<p class="price-sub">Upfront payment: {{ format_money(deal.upfront_cost_cents) }}</p>{% endif %}
+      {% else %}
+      <div class="hero-price"><strong>{{ format_money(deal.cash_price_cents) }}</strong></div>
+      {% endif %}
+
+      <div class="chip-row">
+        {% if deal.data_mb %}<span class="fact-chip">{{ (deal.data_mb / 1024)|round(1) }}GB Data</span>{% endif %}
+        {% if deal.voice_minutes %}<span class="fact-chip">{{ deal.voice_minutes }} Min</span>{% endif %}
+        {% if deal.sms_count %}<span class="fact-chip">{{ deal.sms_count }} SMS</span>{% endif %}
+      </div>
+
+      <div class="variant-block">
+        <h4>Choose colour <span class="variant-current" data-selected-variant="colour">Black</span></h4>
+        <div class="swatch-row">
+          <button type="button" class="swatch active" data-variant-group="colour" data-variant-value="Black" style="--swatch: #101314" aria-label="Black" aria-pressed="true"></button>
+          <button type="button" class="swatch" data-variant-group="colour" data-variant-value="Green" style="--swatch: #a9c9b1" aria-label="Green" aria-pressed="false"></button>
+          <button type="button" class="swatch" data-variant-group="colour" data-variant-value="Pink" style="--swatch: #f0c2c8" aria-label="Pink" aria-pressed="false"></button>
+          <button type="button" class="swatch" data-variant-group="colour" data-variant-value="Gold" style="--swatch: #e7d7ab" aria-label="Gold" aria-pressed="false"></button>
+        </div>
+        <small class="variant-note">Colour availability is confirmed with the selected offer.</small>
+      </div>
+      {% set storage_options = deal.product.specifications.get('storage_options', []) %}
+      {% if storage_options %}<div class="variant-block">
+        <h4>Choose storage <span class="variant-current" data-selected-variant="storage">{{ storage_options[0] }}</span></h4>
+        <div class="option-row">{% for storage in storage_options %}<button type="button" class="option-pill {{ 'active' if loop.first }}" data-variant-group="storage" data-variant-value="{{ storage }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ storage }}</button>{% endfor %}</div>
+      </div>{% endif %}
+
+      <div class="contract-table">
+        <div><span>Contract</span><strong class="lime-text">{{ deal.contract_months }} Months</strong></div>
+        <div><span>Network</span><strong>{{ deal.network.display_name if deal.network else 'Unlocked' }}</strong></div>
+        <div><span>Data</span><strong>{% if deal.data_mb %}{{ (deal.data_mb / 1024)|round(1) }}GB Anytime{% else %}—{% endif %}</strong></div>
+        <div><span>Minutes</span><strong>{{ deal.voice_minutes or '—' }}</strong></div>
+        <div><span>SMS</span><strong>{{ deal.sms_count or '—' }}</strong></div>
+      </div>
+
+      <div class="product-actions">
+        {% if deal.cash_price_cents is not none and deal.deal_type in [DealType.CASH_PURCHASE, DealType.ACCESSORY, DealType.DEPOSIT] %}<button class="button button-primary button-large" data-add-cart="{{ deal.id }}">{{ icons.apply_icon() }} Add to cart</button>{% else %}<a class="button button-primary button-large" data-variant-action data-base-href="/contract-application?deal_id={{ deal.id }}" href="/contract-application?deal_id={{ deal.id }}">{{ icons.apply_icon() }} Apply Now</a>{% endif %}
+        <button type="button" class="button button-outline-dark button-large" data-compare-add="{{ deal.id }}">{{ icons.compare_icon() }} Add to compare</button>
+      </div>
+      <a class="compare-view-link" data-compare-link href="/compare">View comparison</a>
+      {% if principal %}<form method="post" action="/saved-products/{{ deal.product.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="button button-ghost button-block">Save product to my account</button></form>{% else %}<a class="button button-ghost button-block" href="/login?next=/deals/{{ deal.id }}">Sign in to save this product</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="product-information">
+    <details open><summary>Product overview<span class="chev">{{ icons.chevron_down() }}</span></summary><p>{{ deal.product.description or demo_notice }}</p></details>
+    <details><summary>Specifications<span class="chev">{{ icons.chevron_down() }}</span></summary>{% if deal.product.specifications %}<dl class="spec-list">{% for key, value in deal.product.specifications.items() if key not in ('gallery', 'storage_options') %}<div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>{% else %}<p>No specifications have been published.</p>{% endif %}</details>
+    <details><summary>What's in the box<span class="chev">{{ icons.chevron_down() }}</span></summary><p>Device, USB-C cable, SIM eject tool and quick start guide. Power adapter sold separately.</p></details>
+    <details><summary>Terms &amp; Conditions<span class="chev">{{ icons.chevron_down() }}</span></summary><p>Verified: {{ deal.verified_at.strftime('%d %b %Y') if deal.verified_at else 'Not recorded' }}.</p>{% if deal.terms_url %}<a href="{{ deal.terms_url }}" rel="noopener">View terms and conditions</a>{% endif %}</details>
+  </section>
+
+  <section class="trust-bar mini">
+    <div><span class="trust-icon">{{ icons.truck() }}</span><strong>Free delivery</strong><small>On orders over R1,000</small></div>
+    <div><span class="trust-icon">{{ icons.returns() }}</span><strong>14 day returns</strong><small>Hassle free</small></div>
+    <div><span class="trust-icon">{{ icons.lock() }}</span><strong>Secure payments</strong><small>100% safe &amp; secure</small></div>
+  </section>
+</main>
+{% endblock %}

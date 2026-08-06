@@ -1,0 +1,37 @@
+from app.domain.enums import UserRole
+
+
+APP_ROUTE_PREFIX = "/api/v1"
+REFERENCE_PREFIX_ORDER = "SDO"
+REFERENCE_PREFIX_APPLICATION = "SDA"
+REFERENCE_PREFIX_QUOTE = "SDQ"
+REFERENCE_PREFIX_SUPPORT = "SDS"
+
+ADMIN_ROLES = frozenset(
+    {
+        UserRole.ADMINISTRATOR,
+        UserRole.SALES_AGENT,
+        UserRole.APPLICATION_PROCESSOR,
+        UserRole.PRODUCT_MANAGER,
+        UserRole.CUSTOMER_SUPPORT,
+        UserRole.FINANCE_USER,
+    }
+)
+
+CATALOGUE_MANAGEMENT_ROLES = frozenset(
+    {UserRole.ADMINISTRATOR, UserRole.PRODUCT_MANAGER}
+)
+
+APPLICATION_MANAGEMENT_ROLES = frozenset(
+    {
+        UserRole.ADMINISTRATOR,
+        UserRole.SALES_AGENT,
+        UserRole.APPLICATION_PROCESSOR,
+    }
+)
+
+ORDER_MANAGEMENT_ROLES = frozenset(
+    {UserRole.ADMINISTRATOR, UserRole.SALES_AGENT, UserRole.FINANCE_USER}
+)
+
+USER_MANAGEMENT_ROLES = frozenset({UserRole.ADMINISTRATOR})

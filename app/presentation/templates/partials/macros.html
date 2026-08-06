@@ -1,0 +1,50 @@
+{% macro network_mark(deal, large=False) %}
+{% set code = (deal.network.code if deal.network else '') | lower %}
+{% if code == 'vodacom' %}
+  <span class="network-mark vodacom {{ 'large' if large }}"><img class="network-logo" src="https://www.vodacom.co.za/public/assets/images/logo.png" alt="" onerror="this.onerror=null;this.src='/static/img/vodacom-logo.svg';">{{ deal.network.display_name }}</span>
+{% elif code == 'mtn' %}
+  <span class="network-mark mtn {{ 'large' if large }}">{{ deal.network.display_name }}</span>
+{% elif deal.network %}
+  <span class="network-mark generic {{ 'large' if large }}" style="--network-accent: {{ deal.network.accent_color }}">{{ deal.network.display_name }}</span>
+{% else %}
+  <span class="network-mark generic {{ 'large' if large }}">Unlocked</span>
+{% endif %}
+{% endmacro %}
+
+{% macro compact_card(deal) %}
+<article class="compact-card">
+  <a class="compact-card-media" href="/deals/{{ deal.id }}">
+    {{ network_mark(deal) }}
+    {% if deal.product.primary_image_url %}<img src="{{ deal.product.primary_image_url }}" alt="{{ deal.product.name }}">{% else %}<img src="/static/img/device-placeholder.svg" alt="">{% endif %}
+  </a>
+  <div class="compact-card-body">
+    <h3><a href="/deals/{{ deal.id }}">{{ deal.product.name }}</a></h3>
+    {% if deal.monthly_price_cents is not none %}<p class="from-price"><span>From</span> <strong>{{ format_money(deal.monthly_price_cents) }}</strong> <small>PM</small></p>{% else %}<p class="from-price"><strong>{{ format_money(deal.cash_price_cents) }}</strong></p>{% endif %}
+    <p class="compact-sub">{% if deal.contract_months %}{{ deal.contract_months }} Months{% else %}SIM Only{% endif %}</p>
+  </div>
+</article>
+{% endmacro %}
+
+{% macro deal_card(deal) %}
+{% set code = (deal.network.code if deal.network else '') | lower %}
+<article class="deal-card">
+  <div class="deal-card-top">
+    {{ network_mark(deal) }}
+    {% if deal.featured %}<span class="featured-tag">Featured</span>{% endif %}
+  </div>
+  <a class="product-visual" href="/deals/{{ deal.id }}">
+    {% if deal.product.primary_image_url %}<img src="{{ deal.product.primary_image_url }}" alt="{{ deal.product.name }}">{% else %}<img src="/static/img/device-placeholder.svg" alt="">{% endif %}
+  </a>
+  <div class="deal-card-body">
+    <h3><a href="/deals/{{ deal.id }}">{{ deal.product.name }}</a></h3>
+    <p class="deal-facts-line">{% if deal.data_mb %}{{ (deal.data_mb / 1024)|round(1) }}GB{% endif %}{% if deal.voice_minutes %} | {{ deal.voice_minutes }}MIN{% endif %}{% if deal.sms_count %} | {{ deal.sms_count }}SMS{% endif %}</p>
+    <p class="deal-facts-line muted">{% if deal.contract_months %}Contract {{ deal.contract_months }} Months{% else %}SIM Only{% endif %}</p>
+    {% if deal.monthly_price_cents is not none %}<p class="price">{{ format_money(deal.monthly_price_cents) }} <small>PM {% if deal.contract_months %}x {{ deal.contract_months }}{% endif %}</small></p>{% else %}<p class="price">{{ format_money(deal.cash_price_cents) }}</p>{% endif %}
+    <p class="upfront-line">{% if deal.upfront_cost_cents %}Upfront {{ format_money(deal.upfront_cost_cents) }}{% else %}No upfront fee{% endif %}</p>
+    {% if deal.expires_at %}<p class="expiry">Offer ends {{ deal.expires_at.strftime('%d %b %Y') }}</p>{% endif %}
+    <div class="card-actions single">
+      <a class="button button-block network-cta {{ code }}" href="/deals/{{ deal.id }}">{% if deal.deal_type and 'cash' in deal.deal_type.value %}Buy Now{% else %}Apply Now{% endif %}</a>
+    </div>
+  </div>
+</article>
+{% endmacro %}
