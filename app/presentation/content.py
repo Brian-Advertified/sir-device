@@ -20,21 +20,20 @@ class NavigationItem:
 
 
 PRIMARY_NAVIGATION = (
-    NavigationItem("Devices", "/devices"),
     NavigationItem("Mobile Plans", "/mobile-plans"),
     NavigationItem("Internet", "/internet"),
     NavigationItem("Promotions", "/promotions"),
-    NavigationItem("Business", "/business-solutions"),
+    NavigationItem("Business", "/business-deals"),
     NavigationItem("Support", "/support"),
 )
 
 SHOP_BY_NEED = (
-    ("Get a new phone", "/devices", "phone"),
+    ("Get a new phone plan", "/mobile-plans", "phone"),
     ("Upgrade my device", "/contract-application?intent=upgrade", "upgrade"),
     ("SIM-only plans", "/mobile-plans?deal_type=sim_only", "sim"),
-    ("Get business internet", "/internet?use_context=business", "wifi"),
+    ("Get business internet", "/business-deals?deal_type=internet", "wifi"),
     ("Connect my team", "/business-quote", "team"),
-    ("Buy a router", "/devices?category=router", "router"),
+    ("Get LTE or 5G internet", "/internet", "wifi"),
     ("View promotions", "/promotions", "promotion"),
 )
 
@@ -45,9 +44,7 @@ TRUST_ITEMS = (
     ("Business focused", "Quotes support teams, branches and bulk device needs."),
 )
 
-DEMONSTRATION_NOTICE = (
-    "Demonstration content. Final products, prices and terms must be verified before publication."
-)
+DEMONSTRATION_NOTICE = "T&Cs apply. E&OE."
 NETWORK_APPROVAL_NOTICE = "Pricing and availability are subject to confirmation and network approval."
 APPLICATION_REVIEW_NOTICE = (
     "Your application will be reviewed and submitted for the required network and credit checks."
@@ -57,11 +54,11 @@ LABELS = {
     ProductCategory.SMARTPHONE: "Smartphones",
     ProductCategory.TABLET: "Tablets",
     ProductCategory.LAPTOP: "Laptops",
-    ProductCategory.ROUTER: "Routers",
+    ProductCategory.ROUTER: "Internet",
     ProductCategory.MOBILE_PLAN: "Mobile plans",
     ProductCategory.SIM_ONLY: "SIM-only plans",
     ProductCategory.FIBRE: "Fibre",
-    ProductCategory.LTE: "LTE",
+    ProductCategory.LTE: "LTE internet",
     ProductCategory.FIVE_G: "5G internet",
     ProductCategory.ACCESSORY: "Accessories",
     DealType.CASH_PURCHASE: "Cash purchase",

@@ -44,7 +44,7 @@
 .row-editor[open] { min-width: 760px; position: absolute; right: 30px; z-index: 10; padding: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
 .status-form { display: flex; gap: 6px; }
 .status-form select { min-width: 150px; min-height: 34px; padding: 5px 8px; }
-.document-chip { margin: 2px; padding: 4px 7px; display: inline-block; color: #245d09; background: var(--lime-soft); border-radius: 999px; font-size: .65rem; }
+.document-chip { margin: 2px; padding: 4px 7px; display: inline-block; color: var(--lime-strong); background: var(--lime-soft); border-radius: 999px; font-size: .65rem; }
 .ticket-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .ticket-grid article { padding: 20px; border: 1px solid var(--line); border-radius: 12px; }
 .ticket-grid article > div, .ticket-grid footer { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .74rem; }

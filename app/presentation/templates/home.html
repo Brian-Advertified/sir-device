@@ -6,14 +6,10 @@
   <section class="hero">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <span class="hero-pill"><span class="hero-pill-dot"></span> Mobile Deals, One Place.</span>
-        <h1>Your next device, plan or connection <em>starts here.</em></h1>
-        <p>Browse and compare selected Vodacom and MTN devices, mobile plans and internet deals for you or your business.</p>
+        <h1>Your next plan or connection <em>starts here.</em></h1>
         <div class="hero-actions">
-          <a class="button button-primary" href="/devices">Shop Devices</a>
-          <a class="button button-outline-light" href="/mobile-plans">Compare Plans</a>
+          <a class="button button-primary" href="/promotions">Browse Deals</a>
           <a class="button button-outline-light" href="/internet">Find Internet</a>
-          <a class="button button-outline-light" href="/business-quote">Get a Business Quote</a>
         </div>
       </div>
       <div class="device-stage" aria-hidden="true">
@@ -36,10 +32,10 @@
   {% endif %}
 
   <section class="section container">
-    <div class="section-heading"><h2 class="fire-heading"><span class="fire-emoji">🔥</span> Featured Live Deals</h2>
-      <div class="section-heading-right"><a class="view-all-link" href="/promotions">View all deals</a><div class="carousel-nav"><button type="button" aria-label="Previous">{{ icons.arrow('left') }}</button><button type="button" aria-label="Next">{{ icons.arrow('right') }}</button></div></div>
+    <div class="section-heading"><h2 class="fire-heading">Featured Live Deals</h2>
+      <div class="section-heading-right"><a class="view-all-link" href="/promotions">View all deals</a><div class="carousel-nav"><button type="button" data-featured-prev aria-label="Previous featured deals">{{ icons.arrow('left') }}</button><button type="button" data-featured-next aria-label="Next featured deals">{{ icons.arrow('right') }}</button></div></div>
     </div>
-    {% if featured_deals %}<div class="deal-grid">{% for deal in featured_deals %}{{ deal_card(deal) }}{% endfor %}</div>{% else %}<div class="empty-state"><img src="/static/img/device-placeholder.svg" alt=""><h3>No verified live deals published yet</h3><p>An authorised Sir Device product manager can import or publish deals from the administration dashboard.</p><a class="button button-primary" href="/admin/catalog">Open catalogue administration</a></div>{% endif %}
+    {% if featured_deals %}<div class="deal-grid" data-featured-carousel>{% for deal in featured_deals %}{{ deal_card(deal) }}{% endfor %}</div>{% else %}<div class="empty-state"><img src="/static/img/device-placeholder.svg" alt=""><h3>No verified live deals published yet</h3><p>An authorised Sir Device product manager can import or publish deals from the administration dashboard.</p><a class="button button-primary" href="/admin/catalog">Open catalogue administration</a></div>{% endif %}
   </section>
 
   <section class="section muted-section">
@@ -49,7 +45,7 @@
   </section>
 
   <section class="business-band">
-    <div class="container business-grid"><div class="business-copy"><span class="section-kicker lime">Solutions for</span><h2>your <em>business.</em></h2><ul><li>Business mobile contracts</li><li>Staff device packages</li><li>Internet for offices</li><li>LTE &amp; 5G backup connectivity</li><li>Bulk device orders</li><li>Business quotations</li></ul><a class="button button-primary" href="/business-quote">Get a Business Quote</a></div><div class="business-art"><img src="/static/img/business-section.png" alt="Business professional using a mobile device" class="business-image"></div></div>
+    <div class="container business-grid"><div class="business-copy"><span class="section-kicker lime">Solutions for</span><h2><em>businesses.</em></h2><ul><li>Business mobile contracts</li><li>Staff device packages</li><li>Internet for offices</li><li>LTE &amp; 5G backup connectivity</li><li>Bulk device orders</li><li>Business quotations</li></ul><a class="button button-primary" href="/business-quote">Get a Business Quote</a></div></div>
   </section>
 
   <section class="section container why-shop">

@@ -32,6 +32,7 @@ class Settings:
     max_upload_bytes: int
     aws_region: str
     s3_bucket: str | None
+    s3_public_base_url: str | None
     smtp_host: str | None
     smtp_port: int
     smtp_username: str | None
@@ -78,13 +79,14 @@ def get_settings() -> Settings:
         max_upload_bytes=_as_int(os.getenv("MAX_UPLOAD_BYTES"), 10 * 1024 * 1024),
         aws_region=os.getenv("AWS_REGION", "af-south-1"),
         s3_bucket=os.getenv("S3_BUCKET") or None,
+        s3_public_base_url=os.getenv("S3_PUBLIC_BASE_URL") or None,
         smtp_host=os.getenv("SMTP_HOST") or None,
         smtp_port=_as_int(os.getenv("SMTP_PORT"), 587),
         smtp_username=os.getenv("SMTP_USERNAME") or None,
         smtp_password=os.getenv("SMTP_PASSWORD") or None,
         smtp_from_email=os.getenv("SMTP_FROM_EMAIL", "noreply@example.com"),
         smtp_use_tls=_as_bool(os.getenv("SMTP_USE_TLS"), True),
-        support_email=os.getenv("SUPPORT_EMAIL", "support@example.com"),
+        support_email=os.getenv("SUPPORT_EMAIL", "deals@sirdevice.com"),
         support_phone=os.getenv("SUPPORT_PHONE") or None,
         whatsapp_number=os.getenv("WHATSAPP_NUMBER") or None,
         sales_team_email=os.getenv("SALES_TEAM_EMAIL") or None,

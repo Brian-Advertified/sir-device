@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import csv
 from datetime import UTC, datetime
+import hashlib
 import json
 from pathlib import Path
 import re
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
+
+import boto3
 
 from sqlalchemy import select
 
 from app.application.services.import_service import CsvDealImporter
+from app.core.config import Settings, get_settings
 from app.infrastructure.db.models import Deal
 from app.infrastructure.db.session import SessionLocal, create_schema
 
@@ -71,7 +75,7 @@ def category_for(item: dict) -> str:
     if category_keys.intersection({"mobile-plans", "mobile-plan-deals"}):
         return "mobile_plan"
     if category_keys.intersection({"routers", "router-deals", "home-internet", "connectivity"}):
-        return "router"
+        return "5g" if "5g" in text else "lte"
     if category_keys.intersection({"wearable-tech-deals", "accessories", "accessory-deals"}):
         return "accessory"
     if any(word in text for word in ("laptop", "notebook", "macbook")):
@@ -84,8 +88,10 @@ def category_for(item: dict) -> str:
         return "fibre"
     if "lte" in text:
         return "lte"
-    if "5g" in text or "internet" in text or "router" in text or "wi-fi" in text or "wifi" in text:
-        return "router"
+    if "5g" in text:
+        return "5g"
+    if "internet" in text or "router" in text or "wi-fi" in text or "wifi" in text:
+        return "lte"
     if any(word in text for word in ("watch", "headphone", "earbud", "charger", "case", "accessory")):
         return "accessory"
     return "smartphone"
@@ -96,15 +102,43 @@ def integer(value) -> int | None:
     return int(match.group()) if match else None
 
 
-def normalise_item(item: dict, index: int, timestamp: str) -> dict[str, str]:
+def is_real_image(url: str | None) -> bool:
+    return bool(url and "placeholder" not in url.lower())
+
+
+def mirror_image(url: str | None, sku: str, settings: Settings, cache: dict[str, str], client=None) -> str | None:
+    if not is_real_image(url):
+        return None
+    if not settings.s3_bucket or not settings.s3_public_base_url:
+        return url
+    if url in cache:
+        return cache[url]
+    request = Request(url, headers={"User-Agent": "SirDeviceInventory/1.0"})
+    with urlopen(request, timeout=30) as response:
+        contents = response.read()
+        content_type = response.headers.get_content_type() or "image/jpeg"
+    extension = ".webp" if content_type == "image/webp" else ".png" if content_type == "image/png" else ".jpg"
+    key = f"sir-device/catalogue/{sku}/{hashlib.sha256(url.encode()).hexdigest()[:16]}{extension}"
+    (client or boto3.client("s3", region_name=settings.aws_region)).put_object(
+        Bucket=settings.s3_bucket, Key=key, Body=contents, ContentType=content_type,
+        CacheControl="public,max-age=86400",
+    )
+    mirrored_url = f"{settings.s3_public_base_url.rstrip('/')}/{quote(key)}"
+    cache[url] = mirrored_url
+    return mirrored_url
+
+
+def normalise_item(item: dict, index: int, timestamp: str, image_resolver=None) -> dict[str, str]:
     category = category_for(item)
     monthly = item.get("monthly_recurring") or item.get("tariff") or item.get("installment")
     name = (item.get("name") or item.get("sku") or "Vodacom product").strip()[:180]
     sku = str(item.get("sku") or "").strip()
-    gallery = [{"url": image.get("url"), "label": image.get("label") or name} for image in item.get("media_gallery", []) if image.get("url")]
+    gallery = [{"url": image.get("url"), "label": image.get("label") or name} for image in item.get("media_gallery", []) if is_real_image(image.get("url"))]
     for image in [item.get("primary_product_image"), (item.get("image") or {}).get("url"), (item.get("small_image") or {}).get("url")]:
-        if image and not any(existing["url"] == image for existing in gallery):
+        if is_real_image(image) and not any(existing["url"] == image for existing in gallery):
             gallery.append({"url": image, "label": name})
+    if image_resolver:
+        gallery = [{**image, "url": image_resolver(image["url"], sku)} for image in gallery]
     storage_options = sorted(set(re.findall(r"\b(?:64|128|256|512|1024)GB\b", name, re.IGNORECASE)), key=lambda value: int(value[:-2]))
     specifications = {"package": item.get("package_description"), "tariff": item.get("tariff"), "device_installment": item.get("installment"), "source_sku": item.get("primary_product_sku"), "gallery": gallery, "storage_options": storage_options}
     return {
@@ -116,14 +150,17 @@ def normalise_item(item: dict, index: int, timestamp: str) -> dict[str, str]:
         "stock_status": str(item.get("stock_status") or "subject_to_confirmation").lower(), "source_document": SOURCE_URL,
         "administrator_notes": f"Vodacom catalogue snapshot fetched on {timestamp}; confirm partner pricing, stock, and terms before fulfilment.",
         "verified_at": f"{timestamp}T00:00:00Z", "terms_url": SOURCE_URL, "published": "true", "featured": "true" if index < 8 else "false",
-        "image_url": str(item.get("primary_product_image") or (item.get("image") or {}).get("url") or (item.get("small_image") or {}).get("url") or ""), "description": (item.get("package_description") or name)[:500], "use_context": "both",
+        "image_url": (image_resolver(next((url for url in [item.get("primary_product_image"), (item.get("image") or {}).get("url"), (item.get("small_image") or {}).get("url")] if is_real_image(url)), None), sku) if image_resolver else next((url for url in [item.get("primary_product_image"), (item.get("image") or {}).get("url"), (item.get("small_image") or {}).get("url")] if is_real_image(url)), "")), "description": (item.get("package_description") or name)[:500], "use_context": "both",
         "specifications_json": json.dumps(specifications, separators=(",", ":")),
     }
 
 
 def main() -> int:
     timestamp = datetime.now(UTC).date().isoformat()
-    rows = [normalise_item(item, index, timestamp) for index, item in enumerate(fetch_items()) if item.get("sku") and (item.get("primary_product_image") or (item.get("image") or {}).get("url") or (item.get("small_image") or {}).get("url"))]
+    settings = get_settings()
+    image_cache: dict[str, str] = {}
+    image_resolver = lambda url, sku: mirror_image(url, sku, settings, image_cache)
+    rows = [normalise_item(item, index, timestamp, image_resolver) for index, item in enumerate(fetch_items()) if item.get("sku")]
     if not rows:
         raise RuntimeError("Vodacom returned no importable products")
     fieldnames = list(rows[0])

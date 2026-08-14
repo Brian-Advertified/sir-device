@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">MTN device contract</title>
+  <desc id="desc">A neutral yellow mobile device illustration used when a legacy product is not listed in the current MTN store.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffbe2"/><stop offset="1" stop-color="#ffd100"/></linearGradient></defs>
+  <rect width="640" height="480" rx="42" fill="url(#bg)"/>
+  <circle cx="510" cy="85" r="120" fill="#fff" opacity=".45"/>
+  <rect x="225" y="58" width="190" height="325" rx="34" fill="#fff" stroke="#161914" stroke-width="12"/>
+  <rect x="246" y="92" width="148" height="224" rx="12" fill="#f3f5f2"/>
+  <path d="M273 223l38-42 31 30 25-26 27 29v62H246v-22z" fill="#ffd100"/>
+  <circle cx="320" cy="349" r="12" fill="#161914"/>
+  <text x="320" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="800" fill="#161914">MTN DEVICE</text>
+</svg>

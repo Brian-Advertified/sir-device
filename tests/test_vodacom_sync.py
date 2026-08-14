@@ -7,7 +7,8 @@ def test_brand_for_handles_known_and_connectivity_products():
 
 
 def test_category_for_prioritises_source_categories():
-    assert category_for({"name": "5G Router", "package_description": "", "categories": [{"url_key": "router-deals"}]}) == "router"
+    assert category_for({"name": "5G Router", "package_description": "", "categories": [{"url_key": "router-deals"}]}) == "5g"
+    assert category_for({"name": "4G Router", "package_description": "", "categories": [{"url_key": "router-deals"}]}) == "lte"
     assert category_for({"name": "100GB Data SIM", "package_description": "", "categories": [{"url_key": "phones-and-sim"}, {"url_key": "sim-only-deals"}]}) == "sim_only"
     assert category_for({"name": "Samsung phone + Watch LTE", "package_description": "", "categories": [{"url_key": "smartphones"}, {"url_key": "wearable-tech-deals"}]}) == "smartphone"
     assert category_for({"name": "Tablet + 5G Router", "package_description": "", "categories": [{"url_key": "tablets"}, {"url_key": "router-deals"}]}) == "tablet"

@@ -9,14 +9,14 @@
   </a>
   <button class="nav-toggle" data-nav-toggle aria-label="Open menu">Menu</button>
   <nav class="primary-nav" data-primary-nav>
-    {% for item in navigation %}<a href="{{ item.href }}" class="{{ 'has-caret' if loop.index in (1,2,3,5) else '' }}">{{ item.label }}</a>{% endfor %}
+    {% for item in navigation %}<a href="{{ item.href }}">{{ item.label }}</a>{% endfor %}
   </nav>
-  <form class="header-search" method="get">
-    <label class="search-field">{{ icons.search() }}<input type="search" name="q" value="{{ selected.search or '' }}" placeholder="Search for devices, plans and more..."></label>
+  <form class="header-search" data-search-form method="get">
+    <label class="search-field">{{ icons.search() }}<input type="search" name="q" value="{{ selected.search or '' }}" placeholder="Search plans, phones and internet..."></label>
   </form>
   <div class="header-actions">
-    <button class="icon-btn" type="button" aria-label="Search">{{ icons.search() }}</button>
-    {% if principal %}<a class="icon-btn" href="/account" aria-label="Account">{{ icons.user() }}</a>{% else %}<a class="icon-btn" href="/login" aria-label="Sign in">{{ icons.user() }}</a>{% endif %}
+    <button class="icon-btn" type="button" aria-label="Search" data-search-toggle>{{ icons.search() }}</button>
+    {% if principal %}<a class="icon-btn" href="/account" aria-label="Account">{{ icons.user() }}</a>{% endif %}
     <a class="icon-btn cart-link" href="/cart" aria-label="Cart">{{ icons.cart() }}<span data-cart-count>0</span></a>
   </div>
 </header>
@@ -27,14 +27,15 @@
   <div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>{{ title }}</span></div>
   <header class="page-header"><div><h1>{{ title }}</h1><p>{{ intro }}</p></div>
     <div class="sort-control"><span>Sort by:</span>
-      <select name="sort" form="filter-form">
-        <option>Popular</option>
-        <option>Price: Low to High</option>
-        <option>Price: High to Low</option>
-        <option>Newest</option>
+      <select name="sort" form="filter-form" onchange="this.form.submit()">
+        <option value="popular" {{ 'selected' if selected.sort == 'popular' }}>Popular</option>
+        <option value="price_asc" {{ 'selected' if selected.sort == 'price_asc' }}>Price: Low to High</option>
+        <option value="price_desc" {{ 'selected' if selected.sort == 'price_desc' }}>Price: High to Low</option>
+        <option value="newest" {{ 'selected' if selected.sort == 'newest' }}>Newest</option>
       </select>
     </div>
   </header>
+  <button type="button" class="button mobile-filter-toggle" data-filter-toggle aria-expanded="false">Show filters</button>
   <div class="catalogue-layout">
     <aside class="filters">
       <form method="get" id="filter-form">
@@ -68,9 +69,9 @@
           <h4>Contract term</h4>
           <select name="contract_term">
             <option value="">Any</option>
-            <option value="12">12 months</option>
-            <option value="24">24 months</option>
-            <option value="36">36 months</option>
+            <option value="12" {{ 'selected' if selected.contract_term == '12' }}>12 months</option>
+            <option value="24" {{ 'selected' if selected.contract_term == '24' }}>24 months</option>
+            <option value="36" {{ 'selected' if selected.contract_term == '36' }}>36 months</option>
           </select>
         </div>
 
@@ -79,23 +80,24 @@
           <input type="search" placeholder="Search brand..." class="brand-search">
           <div class="brand-list">
             <label class="check-row"><input type="radio" name="brand" value="" {% if not selected.brand %}checked{% endif %} onchange="this.form.submit()"><span class="check-box"></span>All Brands</label>
-            {% for brand in options.brands[:6] %}
-            <label class="check-row"><input type="radio" name="brand" value="{{ brand }}" {% if selected.brand == brand %}checked{% endif %} onchange="this.form.submit()"><span class="check-box"></span>{{ brand }}</label>
+            {% for brand in options.brands %}
+            <label class="check-row brand-option {{ 'is-collapsed' if loop.index > 6 and selected.brand != brand else '' }}" data-brand-name="{{ brand|lower }}"><input type="radio" name="brand" value="{{ brand }}" {% if selected.brand == brand %}checked{% endif %} onchange="this.form.submit()"><span class="check-box"></span>{{ brand }}</label>
             {% endfor %}
           </div>
-          {% if options.brands|length > 6 %}<button type="button" class="show-more-link" data-show-more>+ Show more</button>{% endif %}
+          {% if options.brands|length > 6 %}<button type="button" class="show-more-link" data-show-more aria-expanded="false">+ Show all brands</button>{% endif %}
         </div>
 
         <button class="button button-primary button-block">Apply filters</button>
       </form>
     </aside>
     <section class="catalogue-results">
-      <div class="results-bar"><strong>{{ pagination.total_count }} verified offers</strong><span>Pricing remains subject to confirmation</span></div>
+      <div class="results-bar"><strong>{{ pagination.total_count }} verified offers</strong><a class="compare-selected-link" data-compare-link href="/compare">Compare selected (<span data-compare-count>0</span>)</a></div>
       {% if deals %}
       <div class="compact-grid">{% for deal in deals %}{{ compact_card(deal) }}{% endfor %}</div>
       {% if pagination.page_count > 1 %}<nav class="pagination" aria-label="Catalogue pages">
         {% if pagination.page > 1 %}<a href="{{ request.url.path }}?{{ pagination.query }}{% if pagination.query %}&amp;{% endif %}page={{ pagination.page - 1 }}" aria-label="Previous page">{{ icons.arrow('left') }}</a>{% endif %}
-        {% for number in range(1, pagination.page_count + 1) %}<a href="{{ request.url.path }}?{{ pagination.query }}{% if pagination.query %}&amp;{% endif %}page={{ number }}" class="{{ 'active' if number == pagination.page }}" aria-current="{{ 'page' if number == pagination.page else 'false' }}">{{ number }}</a>{% endfor %}
+        {% set page_state = namespace(previous=0) %}
+        {% for number in pagination.pages %}{% if page_state.previous and number > page_state.previous + 1 %}<span aria-hidden="true">&hellip;</span>{% endif %}<a href="{{ request.url.path }}?{{ pagination.query }}{% if pagination.query %}&amp;{% endif %}page={{ number }}" class="{{ 'active' if number == pagination.page }}" aria-current="{{ 'page' if number == pagination.page else 'false' }}">{{ number }}</a>{% set page_state.previous = number %}{% endfor %}
         {% if pagination.page < pagination.page_count %}<a href="{{ request.url.path }}?{{ pagination.query }}{% if pagination.query %}&amp;{% endif %}page={{ pagination.page + 1 }}" aria-label="Next page">{{ icons.arrow('right') }}</a>{% endif %}
       </nav>{% endif %}
       {% else %}

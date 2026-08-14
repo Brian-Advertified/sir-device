@@ -95,9 +95,80 @@
     }
   });
 
+  const featuredCarousel = document.querySelector("[data-featured-carousel]");
+  const featuredPrevious = document.querySelector("[data-featured-prev]");
+  const featuredNext = document.querySelector("[data-featured-next]");
+  const updateFeaturedControls = () => {
+    if (!featuredCarousel) return;
+    const maxScroll = featuredCarousel.scrollWidth - featuredCarousel.clientWidth;
+    if (featuredPrevious) featuredPrevious.disabled = featuredCarousel.scrollLeft <= 1;
+    if (featuredNext) featuredNext.disabled = featuredCarousel.scrollLeft >= maxScroll - 1;
+  };
+  const scrollFeatured = (direction) => {
+    featuredCarousel?.scrollBy({ left: direction * featuredCarousel.clientWidth, behavior: "smooth" });
+  };
+  featuredPrevious?.addEventListener("click", () => scrollFeatured(-1));
+  featuredNext?.addEventListener("click", () => scrollFeatured(1));
+  featuredCarousel?.addEventListener("scroll", updateFeaturedControls, { passive: true });
+  window.addEventListener("resize", updateFeaturedControls);
+  updateFeaturedControls();
+
   const navToggle = document.querySelector("[data-nav-toggle]");
   const nav = document.querySelector("[data-primary-nav]");
   navToggle?.addEventListener("click", () => nav?.classList.toggle("open"));
+
+  const filterToggle = document.querySelector("[data-filter-toggle]");
+  const filters = document.querySelector(".filters");
+  filterToggle?.addEventListener("click", () => {
+    const isOpen = filters?.classList.toggle("open");
+    filterToggle.textContent = isOpen ? "Hide filters" : "Show filters";
+    filterToggle.setAttribute("aria-expanded", String(Boolean(isOpen)));
+  });
+
+  const searchToggle = document.querySelector("[data-search-toggle]");
+  const searchForm = document.querySelector("[data-search-form]");
+  const searchInput = searchForm?.querySelector('input[type="search"]');
+  searchToggle?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpen = searchForm?.classList.toggle("open");
+    searchToggle.setAttribute("aria-expanded", String(Boolean(isOpen)));
+    if (isOpen) window.setTimeout(() => searchInput?.focus(), 0);
+  });
+  searchForm?.addEventListener("click", (event) => event.stopPropagation());
+  document.addEventListener("click", () => {
+    searchForm?.classList.remove("open");
+    searchToggle?.setAttribute("aria-expanded", "false");
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      searchForm?.classList.remove("open");
+      searchToggle?.setAttribute("aria-expanded", "false");
+      searchToggle?.focus();
+    }
+  });
+
+  const brandSearch = document.querySelector(".brand-search");
+  const brandOptions = [...document.querySelectorAll(".brand-option")];
+  const showMoreBrands = document.querySelector("[data-show-more]");
+  let allBrandsVisible = false;
+  const renderBrandOptions = () => {
+    const query = brandSearch?.value.trim().toLowerCase() || "";
+    brandOptions.forEach((option, index) => {
+      const matches = !query || option.dataset.brandName.includes(query);
+      const withinLimit = allBrandsVisible || index < 6 || option.querySelector("input")?.checked;
+      option.hidden = !matches || (!query && !withinLimit);
+      option.classList.remove("is-collapsed");
+    });
+    if (showMoreBrands) showMoreBrands.hidden = Boolean(query);
+  };
+  brandSearch?.addEventListener("input", renderBrandOptions);
+  showMoreBrands?.addEventListener("click", () => {
+    allBrandsVisible = !allBrandsVisible;
+    showMoreBrands.textContent = allBrandsVisible ? "Show fewer brands" : "+ Show all brands";
+    showMoreBrands.setAttribute("aria-expanded", String(allBrandsVisible));
+    renderBrandOptions();
+  });
+  renderBrandOptions();
 
   const customerType = document.querySelector("[data-customer-type]");
   const personalFields = document.querySelector("[data-personal-fields]");

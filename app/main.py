@@ -4,6 +4,8 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import get_settings, validate_settings
 from app.core.errors import ApplicationError
@@ -62,9 +64,19 @@ app.include_router(admin_workflows.router)
 app.include_router(admin_users.router)
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
+@app.get("/health/live")
+def health_live() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/health")
+def health() -> JSONResponse:
+    try:
+        with SessionLocal() as session:
+            session.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        return JSONResponse({"status": "unavailable"}, status_code=503)
+    return JSONResponse({"status": "ok"})
 
 
 @app.exception_handler(ApplicationError)

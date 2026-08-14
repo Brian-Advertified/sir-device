@@ -31,6 +31,10 @@ def _enum_or_none(enum_type, value: str | None):
         return None
 
 
+def _page_numbers(current: int, total: int) -> list[int]:
+    return sorted({1, total, current - 1, current, current + 1})
+
+
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, session: Session = Depends(get_db)):
     service = CatalogService(session)
@@ -41,7 +45,7 @@ def home(request: Request, session: Session = Depends(get_db)):
         base_context(
             request,
             title="Devices, plans and internet",
-            featured_deals=service.featured_deals(),
+            featured_deals=service.featured_deals(use_context=UseContext.PERSONAL),
             banners=banners,
         ),
     )
@@ -57,6 +61,8 @@ def _catalogue_response(
     fixed_categories: tuple[ProductCategory, ...] = (),
     fixed_deal_type: DealType | None = None,
     fixed_deal_types: tuple[DealType, ...] = (),
+    fixed_use_context: UseContext | None = None,
+    featured_only: bool = False,
 ):
     params = request.query_params
     category = fixed_category or _enum_or_none(ProductCategory, params.get("category"))
@@ -72,10 +78,13 @@ def _catalogue_response(
         deal_types=() if deal_type else fixed_deal_types,
         network_code=params.get("network") or None,
         brand=params.get("brand") or None,
-        use_context=_enum_or_none(UseContext, params.get("use_context")),
+        use_context=fixed_use_context or _enum_or_none(UseContext, params.get("use_context")),
         min_monthly=params.get("min_monthly") or None,
         max_monthly=params.get("max_monthly") or None,
+        contract_term=params.get("contract_term") or None,
+        sort=params.get("sort") or "popular",
         search=params.get("q") or None,
+        featured_only=featured_only,
     )
     service = CatalogService(session)
     total_count = service.count(filters)
@@ -90,9 +99,9 @@ def _catalogue_response(
             title=title,
             intro=intro,
             deals=service.search(filters, limit=CATALOGUE_PAGE_SIZE, offset=(page - 1) * CATALOGUE_PAGE_SIZE),
-            options=service.filter_options(),
+            options=service.filter_options(use_context=filters.use_context),
             selected=filters,
-            pagination={"page": page, "page_count": page_count, "total_count": total_count, "query": query},
+            pagination={"page": page, "page_count": page_count, "pages": _page_numbers(page, page_count), "total_count": total_count, "query": query},
         ),
     )
 
@@ -103,12 +112,12 @@ def devices(request: Request, session: Session = Depends(get_db)):
         request,
         session,
         title="Devices",
-        intro="Browse verified smartphones, tablets, laptops, routers and accessories.",
+        intro="Browse verified smartphones, tablets, laptops and accessories.",
+        fixed_use_context=UseContext.PERSONAL,
         fixed_categories=(
             ProductCategory.SMARTPHONE,
             ProductCategory.TABLET,
             ProductCategory.LAPTOP,
-            ProductCategory.ROUTER,
             ProductCategory.ACCESSORY,
         ),
     )
@@ -121,6 +130,7 @@ def mobile_plans(request: Request, session: Session = Depends(get_db)):
         session,
         title="Mobile plans",
         intro="Compare device contracts and SIM-only offers against your requirements.",
+        fixed_use_context=UseContext.PERSONAL,
         fixed_deal_types=(DealType.DEVICE_CONTRACT, DealType.SIM_ONLY),
     )
 
@@ -131,27 +141,21 @@ def internet(request: Request, session: Session = Depends(get_db)):
         request,
         session,
         title="Internet",
-        intro="Explore LTE, 5G, fibre and router connectivity for home or business.",
+        intro="Explore LTE, 5G and fibre internet for personal use.",
         fixed_deal_type=DealType.INTERNET,
+        fixed_use_context=UseContext.PERSONAL,
     )
 
 
 @router.get("/promotions", response_class=HTMLResponse)
 def promotions(request: Request, session: Session = Depends(get_db)):
-    service = CatalogService(session)
-    deals = CatalogRepository(session).list_public_deals(featured_only=True, limit=60)
-    return templates.TemplateResponse(
+    return _catalogue_response(
         request,
-        "catalogue.html",
-        base_context(
-            request,
-            title="Current promotions",
-            intro="Only published, unexpired promotions are shown.",
-            deals=deals,
-            options=service.filter_options(),
-            selected=CatalogueFilters(),
-            pagination={"page": 1, "page_count": 1, "total_count": len(deals), "query": ""},
-        ),
+        session,
+        title="Current promotions",
+        intro="Only published, unexpired promotions are shown.",
+        fixed_use_context=UseContext.PERSONAL,
+        featured_only=True,
     )
 
 
@@ -164,9 +168,21 @@ def business_solutions(request: Request):
     )
 
 
+@router.get("/business-deals", response_class=HTMLResponse)
+def business_deals(request: Request, session: Session = Depends(get_db)):
+    return _catalogue_response(
+        request,
+        session,
+        title="MTN business deals",
+        intro="Compare business mobile contracts, staff devices and connectivity from the MTN EBU catalogue.",
+        fixed_use_context=UseContext.BUSINESS,
+    )
+
+
 @router.get("/deals/{deal_id}", response_class=HTMLResponse)
 def deal_details(request: Request, deal_id: str, session: Session = Depends(get_db)):
-    deal = CatalogService(session).get_public_deal(deal_id)
+    service = CatalogService(session)
+    deal = service.get_public_deal(deal_id)
     if not deal:
         return templates.TemplateResponse(
             request,
@@ -177,7 +193,12 @@ def deal_details(request: Request, deal_id: str, session: Session = Depends(get_
     return templates.TemplateResponse(
         request,
         "product.html",
-        base_context(request, title=deal.product.name, deal=deal),
+        base_context(
+            request,
+            title=deal.product.name,
+            deal=deal,
+            offer_groups=service.grouped_offers(deal),
+        ),
     )
 
 
@@ -188,11 +209,20 @@ def compare(
     session: Session = Depends(get_db),
 ):
     deal_ids = [item for item in ids.split(",") if item][:3]
-    deals = CatalogService(session).compare(deal_ids)
+    service = CatalogService(session)
+    deals = service.compare(deal_ids)
+    candidates = [] if deals else service.search(
+        CatalogueFilters(
+            deal_types=(DealType.DEVICE_CONTRACT, DealType.SIM_ONLY),
+            use_context=UseContext.PERSONAL,
+            sort="price_asc",
+        ),
+        limit=12,
+    )
     return templates.TemplateResponse(
         request,
         "compare.html",
-        base_context(request, title="Compare offers", deals=deals),
+        base_context(request, title="Compare packages", deals=deals, candidates=candidates),
     )
 
 

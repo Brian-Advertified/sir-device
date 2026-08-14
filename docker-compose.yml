@@ -1,28 +1,74 @@
 services:
-  web:
-    build: .
-    env_file: .env
-    ports:
-      - "8000:8000"
+  migrate:
+    build:
+      context: .
+      target: runtime
+    env_file: ${ENV_FILE:-.env}
+    command: ["alembic", "upgrade", "head"]
     depends_on:
       database:
         condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  web:
+    build:
+      context: .
+      target: runtime
+    env_file: ${ENV_FILE:-.env}
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     volumes:
       - uploads:/app/var/uploads
+    restart: unless-stopped
+    init: true
+
+  notifications:
+    build:
+      context: .
+      target: runtime
+    env_file: ${ENV_FILE:-.env}
+    command: ["sh", "-c", "while true; do python -m scripts.send_notifications; sleep $${NOTIFICATION_INTERVAL_SECONDS:-30}; done"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
+  inventory-sync:
+    build:
+      context: .
+      target: runtime
+    env_file: ${ENV_FILE:-.env}
+    command: ["sh", "-c", "while true; do python -m scripts.sync_vodacom_inventory; sleep $${INVENTORY_SYNC_INTERVAL_SECONDS:-259200}; done"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      disable: true
 
   database:
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sir_device}
       POSTGRES_USER: ${POSTGRES_USER:-sir_device}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sir_device_change_me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 12
     volumes:
       - database:/var/lib/postgresql/data
+    restart: unless-stopped
 
   backup:
     image: postgres:17-alpine
@@ -30,20 +76,17 @@ services:
       PGHOST: database
       PGDATABASE: ${POSTGRES_DB:-sir_device}
       PGUSER: ${POSTGRES_USER:-sir_device}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-sir_device_change_me}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       BACKUP_DIRECTORY: /backups
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
-      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
     depends_on:
       database:
         condition: service_healthy
-    command:
-      - /bin/sh
-      - -c
-      - while true; do /usr/local/bin/backup_postgres.sh; sleep "$${BACKUP_INTERVAL_SECONDS}"; done
+    command: ["sh", "-c", "while true; do /usr/local/bin/backup_postgres.sh; sleep $${BACKUP_INTERVAL_SECONDS:-86400}; done"]
     volumes:
       - ./scripts/backup_postgres.sh:/usr/local/bin/backup_postgres.sh:ro
       - backups:/backups
+    restart: unless-stopped
 
 volumes:
   uploads:

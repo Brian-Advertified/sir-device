@@ -88,27 +88,41 @@ Open `http://localhost:8000` and sign in with the administrator created by the s
 
 The default development configuration creates the SQLite schema automatically. Production should use migrations and set `AUTO_CREATE_SCHEMA=false`.
 
-## PostgreSQL with Docker
+## Production Docker stack
 
-1. Copy `.env.example` to `.env`.
-2. Change `SECRET_KEY`.
-3. Set:
-
-```text
-DATABASE_URL=postgresql+psycopg://sir_device:sir_device_change_me@database:5432/sir_device
-AUTO_CREATE_SCHEMA=false
-```
-
-4. Start the database and application:
+Use `.env.docker.example` as the production-like Docker template. Copy it to `.env`, set a real `SECRET_KEY`, database password, domain, SMTP settings and payment credentials, then start the full stack:
 
 ```bash
-docker compose up -d database
-docker compose run --rm web alembic upgrade head
-docker compose run --rm web python -m scripts.create_admin
-docker compose up -d web
+cp .env.docker.example .env
+# Windows PowerShell: Copy-Item .env.docker.example .env
+docker compose up -d --build
 ```
 
-Change the example database password before deploying.
+The Compose stack includes:
+
+- `database`: PostgreSQL 17 with a persistent volume
+- `migrate`: one-shot Alembic migration gate
+- `web`: non-root production image with two Uvicorn workers
+- `notifications`: notification outbox dispatcher
+- `inventory-sync`: Vodacom catalogue refresh worker
+- `backup`: scheduled PostgreSQL custom-format backups
+
+The web service does not create tables at startup. Migrations run before web and worker services become available. For a one-off environment file without copying it to `.env`, set `ENV_FILE` explicitly:
+
+```bash
+ENV_FILE=.env.docker.example docker compose --env-file .env.docker.example up -d --build
+```
+
+PowerShell:
+
+```powershell
+$env:ENV_FILE = '.env.docker.example'
+docker compose --env-file .env.docker.example up -d --build
+```
+
+For AWS, run the web image on ECS/Fargate or another container platform, use RDS PostgreSQL instead of the Compose database container, and run migrations as a release task. Use S3 for private uploads and CloudFront/S3 for mirrored catalogue images.
+
+Change all example passwords and secrets before deploying.
 
 ### Automated PostgreSQL backups
 
@@ -141,6 +155,15 @@ Supported enum values are defined in `app/domain/enums.py`. Notable CSV values i
 - Use context: `personal`, `business`, `both`
 
 Dates use ISO 8601. Prices use decimal rand values and are converted to cents.
+
+Vodacom inventory is refreshed immediately when the Docker inventory worker starts and then on the configured interval. Manual refreshes are safe to run repeatedly:
+
+```bash
+python -m scripts.sync_vodacom_inventory
+python -m scripts.sync_mtn_inventory data/mtn-contracts-ready.csv --prepared --import
+```
+
+Each command upserts only its own network. An MTN import does not remove Vodacom inventory.
 
 ## Payment setup
 

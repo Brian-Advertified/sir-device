@@ -16,6 +16,7 @@ def _create_cash_deal(session) -> str:
         brand="Generic",
         category=ProductCategory.SMARTPHONE,
         use_context=UseContext.BOTH,
+        primary_image_url="https://example.test/generic-cash-device.png",
         specifications={},
         is_active=True,
     )

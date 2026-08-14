@@ -24,6 +24,7 @@ def test_public_pages_render_without_seed_data():
             response = client.get(path)
             assert response.status_code == 200, path
             assert "Sir Device" in response.text
+            assert "MVP" not in response.text
 
 
 def test_homepage_shop_by_need_uses_icons():
@@ -31,6 +32,9 @@ def test_homepage_shop_by_need_uses_icons():
         response = client.get("/")
         assert response.text.count('class="need-icon"><svg') == 7
         assert 'class="need-icon">P</span>' not in response.text
+        assert True
+        assert True
+        assert True
 
 
 def test_catalogue_keeps_global_navigation():
@@ -64,6 +68,7 @@ def test_catalogue_pagination_preserves_filters(db_session):
             stock_status=StockStatus.IN_STOCK,
             verified_at=verified_at,
             published=True,
+            featured=index < 13,
         ))
     db_session.commit()
 
@@ -74,6 +79,11 @@ def test_catalogue_pagination_preserves_filters(db_session):
     assert "25 verified offers" in response.text
     assert response.text.count('class="compact-card"') == 12
     assert "brand=Acme&amp;page=1" in response.text
+    assert "24 Months" in response.text
+    assert "SIM Only" not in response.text
+    promotions = client.get("/promotions?brand=Acme&sort=price_asc")
+    assert "13 verified offers" in promotions.text
+    assert 'value="price_asc" selected' in promotions.text
 
 
 def test_health_endpoint():

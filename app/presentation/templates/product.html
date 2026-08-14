@@ -9,14 +9,14 @@
   </a>
   <button class="nav-toggle" data-nav-toggle aria-label="Open menu">Menu</button>
   <nav class="primary-nav" data-primary-nav>
-    {% for item in navigation %}<a href="{{ item.href }}" class="{{ 'has-caret' if loop.index in (1,2,3,5) else '' }}">{{ item.label }}</a>{% endfor %}
+    {% for item in navigation %}<a href="{{ item.href }}">{{ item.label }}</a>{% endfor %}
   </nav>
-  <form class="header-search" method="get" action="/devices">
-    <label class="search-field">{{ icons.search() }}<input type="search" name="q" placeholder="Search for devices, plans and more..."></label>
+  <form class="header-search" data-search-form method="get" action="/promotions">
+    <label class="search-field">{{ icons.search() }}<input type="search" name="q" placeholder="Search plans, phones and internet..."></label>
   </form>
   <div class="header-actions">
-    <button class="icon-btn" type="button" aria-label="Search">{{ icons.search() }}</button>
-    {% if principal %}<a class="icon-btn" href="/account" aria-label="Account">{{ icons.user() }}</a>{% else %}<a class="icon-btn" href="/login" aria-label="Sign in">{{ icons.user() }}</a>{% endif %}
+    <button class="icon-btn" type="button" aria-label="Search" data-search-toggle>{{ icons.search() }}</button>
+    {% if principal %}<a class="icon-btn" href="/account" aria-label="Account">{{ icons.user() }}</a>{% endif %}
     <a class="icon-btn cart-link" href="/cart" aria-label="Cart">{{ icons.cart() }}<span data-cart-count>0</span></a>
   </div>
 </header>
@@ -24,7 +24,7 @@
 
 {% block content %}
 <main class="page-shell container">
-  <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/devices">Devices</a><span>/</span><a href="/devices?category={{ deal.product.category.value }}">{{ labels[deal.product.category] }}</a><span>/</span><span>{{ deal.product.name }}</span></div>
+  <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/promotions">Deals</a><span>/</span><span>{{ labels[deal.product.category] }}</span><span>/</span><span>{{ deal.product.name }}</span></div>
   <section class="product-layout">
     {% set gallery = deal.product.specifications.get('gallery', []) %}
     {% if not gallery and deal.product.primary_image_url %}{% set gallery = [{'url': deal.product.primary_image_url, 'label': deal.product.name}] %}{% endif %}
@@ -51,9 +51,10 @@
       {% endif %}
 
       <div class="chip-row">
-        {% if deal.data_mb %}<span class="fact-chip">{{ (deal.data_mb / 1024)|round(1) }}GB Data</span>{% endif %}
-        {% if deal.voice_minutes %}<span class="fact-chip">{{ deal.voice_minutes }} Min</span>{% endif %}
-        {% if deal.sms_count %}<span class="fact-chip">{{ deal.sms_count }} SMS</span>{% endif %}
+        {% set benefits = deal.product.specifications.get('plan_benefits', {}) %}
+        <span class="fact-chip">{{ benefits.get('data_label') or 'Confirm with MTN' }}</span>
+        <span class="fact-chip">{{ benefits.get('minutes_label') or 'Confirm with MTN' }}</span>
+        <span class="fact-chip">{{ benefits.get('sms_label') or 'Confirm with MTN' }}</span>
       </div>
 
       <div class="variant-block">
@@ -73,12 +74,13 @@
       </div>{% endif %}
 
       <div class="contract-table">
-        <div><span>Contract</span><strong class="lime-text">{{ deal.contract_months }} Months</strong></div>
+        <div><span>Contract</span><strong class="lime-text">{{ deal.contract_months ~ ' Months' if deal.contract_months else 'Subject to confirmation' }}</strong></div>
         <div><span>Network</span><strong>{{ deal.network.display_name if deal.network else 'Unlocked' }}</strong></div>
-        <div><span>Data</span><strong>{% if deal.data_mb %}{{ (deal.data_mb / 1024)|round(1) }}GB Anytime{% else %}—{% endif %}</strong></div>
-        <div><span>Minutes</span><strong>{{ deal.voice_minutes or '—' }}</strong></div>
-        <div><span>SMS</span><strong>{{ deal.sms_count or '—' }}</strong></div>
+        <div><span>Data</span><strong>{{ benefits.get('data_label') or 'Confirm with MTN' }}</strong></div>
+        <div><span>Minutes</span><strong>{{ benefits.get('minutes_label') or 'Confirm with MTN' }}</strong></div>
+        <div><span>SMS</span><strong>{{ benefits.get('sms_label') or 'Confirm with MTN' }}</strong></div>
       </div>
+      {% if benefits.get('summary') %}<p class="variant-note">{{ benefits.get('summary') }}</p>{% endif %}
 
       <div class="product-actions">
         {% if deal.cash_price_cents is not none and deal.deal_type in [DealType.CASH_PURCHASE, DealType.ACCESSORY, DealType.DEPOSIT] %}<button class="button button-primary button-large" data-add-cart="{{ deal.id }}">{{ icons.apply_icon() }} Add to cart</button>{% else %}<a class="button button-primary button-large" data-variant-action data-base-href="/contract-application?deal_id={{ deal.id }}" href="/contract-application?deal_id={{ deal.id }}">{{ icons.apply_icon() }} Apply Now</a>{% endif %}
@@ -88,6 +90,31 @@
       {% if principal %}<form method="post" action="/saved-products/{{ deal.product.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="button button-ghost button-block">Save product to my account</button></form>{% else %}<a class="button button-ghost button-block" href="/login?next=/deals/{{ deal.id }}">Sign in to save this product</a>{% endif %}
     </div>
   </section>
+
+  {% if offer_groups %}
+  <section class="product-information">
+    <h2>Choose a plan</h2>
+    <p>Offers are grouped by MTN plan. Different terms or promotional bundles remain separate so you can compare them properly.</p>
+    {% for group in offer_groups %}
+    <details {{ 'open' if loop.first }}>
+      <summary>{{ group.name }} <small>{{ group.offers|length }} option{{ '' if group.offers|length == 1 else 's' }}</small><span class="chev">{{ icons.chevron_down() }}</span></summary>
+      {% for offer in group.offers %}
+      {% set option_benefits = offer.product.specifications.get('plan_benefits', {}) %}
+      <div class="contract-table">
+        <div><span>Contract</span><strong>{{ offer.contract_months ~ ' Months' if offer.contract_months else 'Confirm with MTN' }}</strong></div>
+        <div><span>Monthly price</span><strong class="lime-text">{{ format_money(offer.monthly_price_cents) }}</strong></div>
+        <div><span>Data</span><strong>{{ option_benefits.get('data_label') or 'Confirm with MTN' }}</strong></div>
+        <div><span>Minutes</span><strong>{{ option_benefits.get('minutes_label') or 'Confirm with MTN' }}</strong></div>
+        <div><span>SMS</span><strong>{{ option_benefits.get('sms_label') or 'Confirm with MTN' }}</strong></div>
+        {% if offer.product.specifications.get('freebies_device') %}<div><span>Included device</span><strong>{{ offer.product.specifications.get('freebies_device') }}</strong></div>{% endif %}
+        {% if offer.product.specifications.get('freebies_plan') %}<div><span>Plan promotion</span><strong>{{ offer.product.specifications.get('freebies_plan') }}</strong></div>{% endif %}
+      </div>
+      <a class="button button-primary" href="/contract-application?deal_id={{ offer.id }}">Choose this option</a>
+      {% endfor %}
+    </details>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   <section class="product-information">
     <details open><summary>Product overview<span class="chev">{{ icons.chevron_down() }}</span></summary><p>{{ deal.product.description or demo_notice }}</p></details>

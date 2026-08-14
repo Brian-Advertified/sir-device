@@ -1,0 +1,13 @@
+.git
+.venv
+.env
+*.db
+.pytest_cache
+.coverage
+htmlcov
+var
+sir_device.egg-info
+__pycache__
+*.py[cod]
+tests
+docs

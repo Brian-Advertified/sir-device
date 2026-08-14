@@ -9,3 +9,5 @@ var/
 htmlcov/
 *.zip
 *.egg-info/
+.sir-device-local.*.log
+data/backups/

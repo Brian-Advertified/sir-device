@@ -1,2 +1,45 @@
 {% extends "base.html" %}
-{% block content %}<main class="page-shell container form-page"><div class="form-intro"><span class="section-kicker">Real people, clear references</span><h1>Contact and support</h1><p>Ask about a device, plan, order, application or business requirement.</p><div class="contact-options">{% if whatsapp_number %}<a href="https://wa.me/{{ whatsapp_number }}" rel="noopener">WhatsApp support</a>{% endif %}{% if support_phone %}<a href="tel:{{ support_phone }}">{{ support_phone }}</a>{% endif %}<a href="mailto:{{ support_email }}">{{ support_email }}</a></div></div>{% if submitted %}<div class="result-card"><span class="result-icon">✓</span><h2>Support request received</h2><p>Your reference is <strong>{{ reference }}</strong>.</p></div>{% else %}<form method="post" class="form-card"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}<div class="form-grid"><label>Name<input name="name" required></label><label>Email<input type="email" name="email" required></label><label>Phone<input name="phone"></label><label>Subject<input name="subject" required></label><label class="span-2">How can we help?<textarea name="message" rows="7" required></textarea></label></div><button class="button button-primary">Send request</button></form>{% endif %}<section class="faq-section"><span class="section-kicker">Frequently asked questions</span><h2>Before you submit</h2><details><summary>Does submitting an application guarantee approval?</summary><p>No. Applications still require the applicable network and credit checks.</p></details><details><summary>Are catalogue prices always final?</summary><p>Published pricing and availability remain subject to confirmation, verification and network approval.</p></details><details><summary>Can I track an application without an account?</summary><p>Yes. Use the reference and email address on the request tracker.</p></details><details><summary>Which payments are processed online?</summary><p>Only eligible once-off device, accessory, deposit and upfront-fee payments are processed by this MVP.</p></details></section></main>{% endblock %}
+{% block content %}
+<main class="page-shell container form-page support-page">
+  <div class="form-intro support-hero">
+    <span class="section-kicker">Real people, clear references</span>
+    <h1>Contact and support</h1>
+    <p>Ask about a plan, order, application or business requirement.</p>
+    <div class="contact-options">
+      {% if whatsapp_number %}<a href="https://wa.me/{{ whatsapp_number }}" rel="noopener">WhatsApp support</a>{% endif %}
+      {% if support_phone %}<a href="tel:{{ support_phone }}">{{ support_phone }}</a>{% endif %}
+      <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+    </div>
+  </div>
+
+  {% if submitted %}
+  <div class="result-card"><span class="result-icon">✓</span><h2>Support request received</h2><p>Your reference is <strong>{{ reference }}</strong>.</p></div>
+  {% else %}
+  <form method="post" class="form-card support-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="support-form-heading">
+      <span class="section-kicker">Send us a message</span>
+      <h2>How can we help?</h2>
+      <p>Share a few details and our team will get back to you.</p>
+    </div>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <div class="form-grid">
+      <label>Name<input name="name" required></label>
+      <label>Email<input type="email" name="email" required></label>
+      <label>Phone<input name="phone"></label>
+      <label>Subject<input name="subject" required></label>
+      <label class="span-2">Message<textarea name="message" rows="5" required></textarea></label>
+    </div>
+    <div class="support-form-actions"><button class="button button-primary button-large">Send request</button></div>
+  </form>
+  {% endif %}
+
+  <section class="faq-section">
+    <span class="section-kicker">Frequently asked questions</span><h2>Before you submit</h2>
+    <details><summary>Does submitting an application guarantee approval?</summary><p>No. Applications still require the applicable network and credit checks.</p></details>
+    <details><summary>Are catalogue prices always final?</summary><p>Published pricing and availability remain subject to confirmation, verification and network approval.</p></details>
+    <details><summary>Can I track an application without an account?</summary><p>Yes. Use the reference and email address on the request tracker.</p></details>
+    <details><summary>Which payments are processed online?</summary><p>Only eligible once-off accessory, deposit and upfront-fee payments are processed online.</p></details>
+  </section>
+</main>
+{% endblock %}
