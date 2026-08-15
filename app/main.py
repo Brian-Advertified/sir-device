@@ -52,6 +52,31 @@ app = FastAPI(
 static_directory = Path(__file__).parent / "presentation" / "static"
 app.mount("/static", StaticFiles(directory=str(static_directory)), name="static")
 
+
+@app.middleware("http")
+async def cache_control_headers(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+
+    if path.startswith("/static/"):
+        response.headers.setdefault(
+            "Cache-Control",
+            "public, max-age=0, must-revalidate",
+        )
+        return response
+
+    if request.method == "GET" and (
+        response.media_type == "text/html"
+        or response.media_type == "application/xhtml+xml"
+        or path == "/"
+    ):
+        response.headers.setdefault(
+            "Cache-Control",
+            "no-store, no-cache, must-revalidate, max-age=0",
+        )
+
+    return response
+
 app.include_router(public.router)
 app.include_router(auth.router)
 app.include_router(commerce.router)
